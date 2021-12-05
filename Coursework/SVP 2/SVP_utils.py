@@ -5,22 +5,6 @@
 
 import numpy as np
 import random
-from copy import deepcopy
-
-B = np.array([
- [37, 20, 96, 20, 34, 64, 82, 56, 47, 21, 50, 49],
- [39, 24, 19, 49, 82, 97, 88, 84, 41, 51, 36, 74],
- [19, 56, 37, 73,  4, 12, 72, 18, 46,  8, 54, 94],
- [13, 46, 26,  8, 83, 71, 45, 84, 21, 32, 53, 80],
- [65, 39, 25, 56, 52, 44, 84, 30, 69, 33, 13,  5],
- [59, 56, 90,  1, 42, 58, 90, 92,  2,  6,  7, 80],
- [18, 14, 26, 31, 91, 93, 77, 64, 95, 36, 23,  5],
- [11, 58, 22, 51, 90, 13, 93, 43, 21, 81, 12, 77],
- [42, 65, 99,  6, 23, 43, 94, 30, 37, 66, 34, 66],
- [99, 31, 24, 44, 18, 58, 17, 27, 70, 88, 59, 11],
- [30, 43, 21, 70, 48, 47, 13, 93, 94, 48, 69, 58],
- [ 7, 12, 94, 88, 59, 95, 43, 62, 71, 36, 91, 70]
-])
 
 # %%
 """
@@ -50,50 +34,6 @@ def gram_schmidt(B):
     return B_.T
 
 # B = gram_schmidt(B)
-# %%
-"""
-# SVPoint class
-"""
-
-class SVPoint():
-    def __init__(self, x):
-        """
-        Create a point p on the lattice p = Bx
-
-        Parameters:
-        x (np.array): The vector x s.t. Bx = p
-        """
-        self.x = np.array(x)
-        self.p = np.dot(B, x)
-        self.norm = self.find_norm()
-
-    def __eq__(self, other):
-        c = self.p == other.p
-        return c.all()
-        
-    def __neq__(self, other):
-        return not self.__eq__(other)
-
-    def __str__(self):
-        return f"p={self.p},\nx={self.x},\nnorm={self.norm}\n"
-
-    def __repr__(self):
-        return str(self)
-
-    def __hash__(self):
-        return hash(tuple(self.x))
-
-    def find_norm(self):
-        """
-        Function to find the length of a vector/point
-        
-        Parameters:
-        p (np.array): vector
-        
-        Returns:
-        int: length of the vector
-        """
-        return np.linalg.norm(self.p)
 
 # %%
 """
@@ -145,30 +85,19 @@ write_output(B, np.array([14,5,5,23,24,423,4,23,5,]), 100, np.array([1,3,4,56,4]
 # Sieving functions
 """
 
-def generate_basis_vectors(B, n, SV):
+def find_norm(x, B):
     """
-    Function to generate points which are the basis vectors from B
+    Function to find the length of a vector/point
     
     Parameters:
+    x (np.array): vector
     B (np.array): Basis for lattice
-    n (int): number of points to generate
-    SV (SVPoint): short vector on the lattice
- 
+
     Returns:
-    set: set of distinct points
-    SVPoint: short vector on the lattice
+    int: length of the vector Bx
     """
-    points = set()
-
-    for i in range(B.shape[0]):
-        tmp = np.zeros_like(B[1])
-        tmp[i] = 1
-        new_p = SVPoint(tmp)
-        points.add(new_p)
-        if 0 < new_p.norm < SV.norm:
-            SV = new_p
-
-    return points, SV
+    p = np.dot(B, x)
+    return np.linalg.norm(p)
 
 
 def generate_random_points(B, n, l=-2, h=3):
@@ -183,53 +112,58 @@ def generate_random_points(B, n, l=-2, h=3):
     
     Returns:
     set: points
-    SVPoint: short vector on the lattice
+    tuple: short vector on the lattice
     """
     points = set()
-    SV = SVPoint(np.random.randint(l, h, size=(len(B[0]),)))
 
     while len(points) < n:
-        new_p = SVPoint(np.random.randint(l, h, size=(len(B[0]),)))
-        points.add(deepcopy(new_p))
-        if 0 < new_p.norm < SV.norm:
-            # SV = SVPoint(new_p.x)
-            SV = deepcopy(new_p)
+        x = np.random.randint(l, h, size=(len(B[0]),))
+        norm = find_norm(x, B)
+
+        if norm != 0:
+            points.add( (x, norm) )
+
+    SV = min(points, key=lambda x: x[1])
 
     return points, SV
 
 
-def find_difference(p, q):
+def find_difference(p, q, B):
     """
     Function to find the point which is the difference of p and another q
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
-    
+    p (tuple): Point p
+    q (tuple): Point q
+    B (np.array): Basis for lattice
+
     Returns:
-    SVPoint: average of self and other on B
+    tuple: difference of p and q on B
     """
-    diff_x = p.x - q.x 
-    return SVPoint(diff_x)
+    diff_x = p[1] - q[1]
+    norm = find_norm(diff_x, B)
+    return (diff_x, norm)
 
 
-def find_average(p, q):
+def find_average(p, q, B):
     """
     Function to find the point which is the average of p and q
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (tuple): Point p
+    q (tuple): Point q
+    B (np.array): Basis for lattice
     
     Returns:
-    SVPoint: average of p and q on B
+    tuple: average of p and q on B
     None: if the average isn't a point, it returns None
     """
-    for i, j in zip(p.x, q.x):
+    for i, j in zip(p[0], q[0]):
         if (i - j) % 2 != 0:
             return None    
-    avg_x = np.array((p.x + q.x)/2)
-    return SVPoint(avg_x)
+    avg_x = np.array((p[0] + q[0])/2)
+    norm = find_norm(avg_x, B)
+    return (avg_x, norm)
 
 
 def find_modified_average(p, q):
@@ -237,18 +171,18 @@ def find_modified_average(p, q):
     Function to find the point which is the average of self and another point
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (tuple): Point p
+    q (tuple): Point q
     
     Returns:
-    SVPoint: average of p and q
+    tuple: average of p and q
     """
-    for i, (ui, vi) in enumerate(zip(p.x, q.x)):
+    for i, (ui, vi) in enumerate(zip(p[0], q[0])):
         if (ui - vi) % 2 != 0:
-            q.x[i] += 1
+            q[0][i] += 1
     
-    avg_x = np.array((p.x + q.x)/2)
-    return SVPoint(avg_x)
+    avg_x = np.array((q[0] + q[0])/2)
+    return SVPoint(avg_x, B)
     
 def augment(points, n, SV, f=find_modified_average):
     """
@@ -257,12 +191,12 @@ def augment(points, n, SV, f=find_modified_average):
     Parameters:
     points (set): Points to consider
     n (int): number of points to find
-    SV (SVPoint): current shortest vector on the lattice
+    SV (tuple): current shortest vector on the lattice
     f (function): function to combine two vectors
 
     Returns:
     set: more points
-    SVPoint: current shortest vector on the lattice
+    tuple: current shortest vector on the lattice
     """
     new_SV = deepcopy(SV)
     points_list = list(points)
@@ -281,7 +215,7 @@ def augment(points, n, SV, f=find_modified_average):
             new_p = f(p, q)
             new_points.add(new_p)
             if 0 < new_p.norm < new_SV.norm:
-                new_SV = SVPoint(new_p.x)
+                new_SV = SVPoint(new_p.x, B)
 
     return new_points, new_SV
 
