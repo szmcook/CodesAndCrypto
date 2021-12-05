@@ -166,21 +166,19 @@ def generate_random_points(B, n, l=-2, h=3):
     h (int): high number for range of basis vector multiples
     
     Returns:
-    set: points
-    SVPoint: short vector on the lattice
+    list: points ordered by norm
     """
-    points = set()
+    points = []
 
     while len(points) < n:
         x = np.random.randint(l, h, size=(len(B[0]),))
         new_p = SVPoint(x, B)
-        assert (new_p.p == np.dot(B, new_p.x)).all()
-        if new_p.norm != 0:
-            points.add(new_p)
 
-    SV = min(points, key=lambda x: x.norm)
+        if new_p.norm != 0 and new_p not in points:
+            points.append(new_p)
 
-    return points, SV
+    points.sort(key=lambda x: x.norm)
+    return points
 
 
 def find_difference(p, q, B):
@@ -231,35 +229,32 @@ def find_modified_average(p, q, B):
     Returns:
     SVPoint: average of p and q
     """
-    for i, (ui, vi) in enumerate(zip(p.x, q.x)):
+    tmp = deepcopy(q.x)
+    for i, (ui, vi) in enumerate(zip(p.x, q.x)):    
         if (ui - vi) % 2 != 0:
-            tmp = q.x
             tmp[i] += random.choice([-1,1])
-            q.x = tmp
     
-    avg_x = np.array((p.x + q.x)/2)
-    return SVPoint(avg_x, B)
+    avg_x = np.array((p.x + tmp)/2)
+    new_p = SVPoint(avg_x, B)
+    assert (new_p.p == np.dot(B, new_p.x)).all()
+    return new_p
     
-import time
+# import time
 
-def augment(points, SV, B, n, p, f=find_modified_average):
+def augment(points, B, n, p, generate_point=find_modified_average):
     """
     Function to find n more points
     
     Parameters:
-    points (set): Points to consider
-    SV (SVPoint): current shortest vector on the lattice
+    points (list): Ordered list of points to consider
     B (np.array): Basis for lattice
-    n (int): number of points to find
-    p (float): proportion of the old points to keep for the new set
-    f (function): function to combine two vectors
+    n (int): number of points to put into the list to return
+    p (float): proportion of the old points to keep for the new list
+    generate_point (function): function to combine two vectors and generate a new one
 
     Returns:
-    set: more points
-    SVPoint: current shortest vector on the lattice
+    list: more points
     """
-    points_list = list(points)
-    points_list = sorted(points_list, key=lambda x: x.norm)
 
     # Generate a new set. Options: empty set, some from the old set, include shortest vector
     # new_points = set(random.sample(points, int(p*len(points))))
@@ -267,31 +262,28 @@ def augment(points, SV, B, n, p, f=find_modified_average):
     # new_points.add(new_SV)
 
     # Keep the first p shortest vectors
-    points_list = points_list[:-int((1-p) * len(points_list))]
+    new_points = points[:int(p * len(points))]
 
-    # Fill up the new set with new vectord
-    s = time.time()
-    print('starting')
-    
+    # Fill up the new set with new vectors
     while len(new_points) < n:
-        print('loop')
-        p = random.choice(points_list)
-        q = random.choice(points_list)
+        p1 = random.choice(points[:int(p * len(points))])
+        p2 = random.choice(points[:int(p * len(points))])
 
-        if time.time() - s > 20:
-            print(p.p)
-            print(q.p)
+        # We require that: new_p is not the 0 vector, is not in the list, is shorter than p1 and p2
+        new_p = generate_point(p1, p2, B)
+        if (new_p.norm == 0):
+            # print("0 norm")
+            continue
+        if (p1 == p2):
+            # print('parents are the same')
+            continue
+        if (new_p.norm > p1.norm or new_p.norm > p2.norm):
+            # print('new_p longer than parents')
+            continue
+        if (new_p in new_points):
+            # print('new_p in new_points')
+            continue
+        new_points.append(new_p)
 
-        if p != q:
-            new_p = f(p, q, B)
-            if new_p.norm < p.norm and new_p.norm < q.norm:
-                new_points.add(new_p)
-    print('end')
-    points_list = list(points)
-    points_list = sorted(points_list, key=lambda x: x.norm)[:-1]
-    points = set(points_list)
-    
-    SV = min(points, key=lambda x: x.norm)
-
-    return new_points, SV
-
+    new_points.sort(key=lambda x: x.norm)
+    return new_points
