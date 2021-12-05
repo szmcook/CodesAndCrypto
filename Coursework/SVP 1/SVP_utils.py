@@ -131,14 +131,13 @@ x =
 # Sieving functions
 """
 
-def generate_basis_vectors(B, n, SV):
+def generate_basis_vectors(B, n):
     """
     Function to generate points which are the basis vectors from B
     
     Parameters:
     B (np.array): Basis for lattice
     n (int): number of points to generate
-    SV (SVPoint): short vector on the lattice
  
     Returns:
     set: set of distinct points
@@ -151,9 +150,8 @@ def generate_basis_vectors(B, n, SV):
         tmp[i] = 1
         new_p = SVPoint(tmp, B)
         points.add(new_p)
-        if 0 < new_p.norm < SV.norm:
-            SV = new_p
 
+    SV = min(points, key=lambda x: x.norm)
     return points, SV
 
 
@@ -235,44 +233,65 @@ def find_modified_average(p, q, B):
     """
     for i, (ui, vi) in enumerate(zip(p.x, q.x)):
         if (ui - vi) % 2 != 0:
-            q.x[i] += 1
+            tmp = q.x
+            tmp[i] += random.choice([-1,1])
+            q.x = tmp
     
     avg_x = np.array((p.x + q.x)/2)
     return SVPoint(avg_x, B)
     
-def augment(points, n, SV, B, f=find_modified_average):
+import time
+
+def augment(points, SV, B, n, p, f=find_modified_average):
     """
     Function to find n more points
     
     Parameters:
     points (set): Points to consider
-    n (int): number of points to find
     SV (SVPoint): current shortest vector on the lattice
     B (np.array): Basis for lattice
+    n (int): number of points to find
+    p (float): proportion of the old points to keep for the new set
     f (function): function to combine two vectors
 
     Returns:
     set: more points
     SVPoint: current shortest vector on the lattice
     """
-    new_SV = deepcopy(SV)
     points_list = list(points)
+    points_list = sorted(points_list, key=lambda x: x.norm)
 
     # Generate a new set. Options: empty set, some from the old set, include shortest vector
-    new_points = set(random.sample(points, int(0.5*n)))
+    # new_points = set(random.sample(points, int(p*len(points))))
     # new_points = set()
-    new_points.add(new_SV)
+    # new_points.add(new_SV)
 
-    # Fill up the new set with averages
+    # Keep the first p shortest vectors
+    points_list = points_list[:-int((1-p) * len(points_list))]
+
+    # Fill up the new set with new vectord
+    s = time.time()
+    print('starting')
+    
     while len(new_points) < n:
+        print('loop')
         p = random.choice(points_list)
         q = random.choice(points_list)
 
+        if time.time() - s > 20:
+            print(p.p)
+            print(q.p)
+
         if p != q:
             new_p = f(p, q, B)
-            new_points.add(new_p)
-            if 0 < new_p.norm < new_SV.norm:
-                new_SV = SVPoint(new_p.x, B)
+            if new_p.norm < p.norm and new_p.norm < q.norm:
+                new_points.add(new_p)
+    print('end')
+    points_list = list(points)
+    points_list = sorted(points_list, key=lambda x: x.norm)[:-1]
+    points = set(points_list)
+    
+    SV = min(points, key=lambda x: x.norm)
 
-    return new_points, new_SV
+    return new_points, SV
 
