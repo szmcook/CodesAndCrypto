@@ -264,8 +264,13 @@ def augment(points, B, n, p, generate_point=find_modified_average):
     # Keep the first p shortest vectors
     new_points = points[:int(p * len(points))]
 
+    attempts = 0
+
     # Fill up the new set with new vectors
+    # while len(new_points) < n and attempts < 10000:
     while len(new_points) < n:
+        attempts += 1
+
         p1 = random.choice(points[:int(p * len(points))])
         p2 = random.choice(points[:int(p * len(points))])
 
@@ -277,7 +282,7 @@ def augment(points, B, n, p, generate_point=find_modified_average):
         if (p1 == p2):
             # print('parents are the same')
             continue
-        if (new_p.norm > p1.norm or new_p.norm > p2.norm):
+        if (new_p.norm > p1.norm or new_p.norm > p2.norm): # TODO experiment with this being an and
             # print('new_p longer than parents')
             continue
         if (new_p in new_points):
