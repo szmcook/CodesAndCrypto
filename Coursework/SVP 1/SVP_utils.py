@@ -236,7 +236,33 @@ def find_modified_average(p, q, B):
     
     avg_x = np.array((p.x + tmp)/2)
     new_p = SVPoint(avg_x, B)
-    assert (new_p.p == np.dot(B, new_p.x)).all()
+    return new_p
+
+
+def find_modified_average_random(p, q, B):
+    """
+    Function to find a random point on the lattice from the modified average
+
+    Parameters:
+    p (SVPoint): Point p
+    q (SVPoint): Point q
+    B (np.array): Basis for lattice
+    
+    Returns:
+    SVPoint: random point with x values between -3 and 3
+    """
+    tmp = deepcopy(q.x)
+    for i, (ui, vi) in enumerate(zip(p.x, q.x)):    
+        if (ui - vi) % 2 != 0:
+            tmp[i] += random.choice([-1,1])
+
+    # Add some random noise
+    for _ in range(3):
+        tmp[random.randint(0,11)] += random.choice([-2, 2])
+
+    avg_x = np.array((p.x + tmp)/2)
+
+    new_p = SVPoint(avg_x, B)
     return new_p
     
 # import time
@@ -282,7 +308,7 @@ def augment(points, B, n, p, generate_point=find_modified_average):
         if (p1 == p2):
             # print('parents are the same')
             continue
-        if (new_p.norm > p1.norm or new_p.norm > p2.norm): # TODO experiment with this being an and
+        if (new_p.norm > p1.norm and new_p.norm > p2.norm): # TODO experiment with this being an and or an or MAKES NO DIFFERENCE?
             # print('new_p longer than parents')
             continue
         if (new_p in new_points):
