@@ -6,6 +6,8 @@
 import numpy as np
 import random
 from copy import deepcopy
+import re
+import time
 
 # %%
 """
@@ -86,15 +88,11 @@ class SVPoint():
 # File input output functions
 """
 
-import numpy as np
 
 def read_basis(filename):
     with open(filename) as f:
-        lines = [l[2:-3] for l in f.readlines()[5:] if l[0] not in '#\n']
-
-    B = [[int(ele) for ele in l.split(', ')] for l in lines]
-    B = np.array(B)
-    return B
+        lines = [re.findall('[0-9]+', l) for l in f.readlines() if l[0] not in '#B\n']
+    return np.array(lines, dtype=np.int64)
 
 # B = read_basis('task/latticeBasis.txt')
 
@@ -113,13 +111,13 @@ B =
 {B}
 
 u =
-{u}
+{np.atleast_2d(u).T}
 
 norm =
 {norm}
 
 x =
-{x}
+{np.atleast_2d(x).T}
     """
     with open(filename,'w') as f:
         f.write(out_str)
@@ -138,21 +136,24 @@ def generate_basis_vectors(B, n):
     Parameters:
     B (np.array): Basis for lattice
     n (int): number of points to generate
- 
+    
     Returns:
-    set: set of distinct points
-    SVPoint: short vector on the lattice
+    list: points ordered by norm
     """
-    points = set()
+    points = []
 
-    for i in range(B.shape[0]):
-        tmp = np.zeros_like(B[1])
-        tmp[i] = 1
-        new_p = SVPoint(tmp, B)
-        points.add(new_p)
+    while len(points) < n:
+        vs = random.randint(0, 4)
+        for _ in range(vs):
+            tmp = np.zeros_like(B[1])
+            i = random.randint(0, 11)
+            tmp[i] = random.choice([-1, 1])
+            new_p = SVPoint(tmp, B)
+            if new_p.norm != 0 and new_p not in points:
+                points.append(new_p)
 
-    SV = min(points, key=lambda x: x.norm)
-    return points, SV
+    points.sort(key=lambda x: x.norm)
+    return points
 
 
 def generate_random_points(B, n, l=-2, h=3):
@@ -179,6 +180,28 @@ def generate_random_points(B, n, l=-2, h=3):
 
     points.sort(key=lambda x: x.norm)
     return points
+
+
+def find_random(p, q, B):
+    """
+    Function to find a random point on the lattice
+    
+    Parameters:
+    p (SVPoint): Point p
+    q (SVPoint): Point q
+    B (np.array): Basis for lattice
+    
+    Returns:
+    SVPoint: random point on lattice defined by B
+    """
+    points = []    
+    while len(points) < 1:
+        x = np.random.randint(-4, 4, size=(len(B[0]),))
+        new_p = SVPoint(x, B)
+        if new_p.norm != 0:
+            points.append(new_p)
+
+    return points[0]
 
 
 def find_difference(p, q, B):
@@ -265,9 +288,8 @@ def find_modified_average_random(p, q, B):
     new_p = SVPoint(avg_x, B)
     return new_p
     
-# import time
 
-def augment(points, B, n, p, generate_point=find_modified_average):
+def augment(points, B, n, p, generate_point=find_modified_average, timeout=None):
     """
     Function to find n more points
     
@@ -277,44 +299,43 @@ def augment(points, B, n, p, generate_point=find_modified_average):
     n (int): number of points to put into the list to return
     p (float): proportion of the old points to keep for the new list
     generate_point (function): function to combine two vectors and generate a new one
+    timeout (int): seconds to timeout after
 
     Returns:
     list: more points
     """
 
-    # Generate a new set. Options: empty set, some from the old set, include shortest vector
-    # new_points = set(random.sample(points, int(p*len(points))))
+    # Generate a new set. Options: empty set, random sample from the old set, shortest from the old set
     # new_points = set()
+    # new_points = set(random.sample(points, int(p*len(points))))
     # new_points.add(new_SV)
 
     # Keep the first p shortest vectors
     new_points = points[:int(p * len(points))]
 
-    attempts = 0
-
     # Fill up the new set with new vectors
-    # while len(new_points) < n and attempts < 10000:
     while len(new_points) < n:
-        attempts += 1
-
         p1 = random.choice(points[:int(p * len(points))])
         p2 = random.choice(points[:int(p * len(points))])
 
         # We require that: new_p is not the 0 vector, is not in the list, is shorter than p1 and p2
         new_p = generate_point(p1, p2, B)
-        if (new_p.norm == 0):
+        if generate_point==find_random:
+            new_points.append(new_p)
+        elif (new_p.norm == 0):
             # print("0 norm")
             continue
-        if (p1 == p2):
+        elif (p1 == p2):
             # print('parents are the same')
             continue
-        if (new_p.norm > p1.norm and new_p.norm > p2.norm): # TODO experiment with this being an and or an or MAKES NO DIFFERENCE?
+        elif (new_p.norm > p1.norm) and (new_p.norm > p2.norm): # Using or in place of and makes little difference here.
             # print('new_p longer than parents')
             continue
-        if (new_p in new_points):
+        elif (new_p in new_points):
             # print('new_p in new_points')
             continue
-        new_points.append(new_p)
+        else:
+            new_points.append(new_p)
 
     new_points.sort(key=lambda x: x.norm)
     return new_points

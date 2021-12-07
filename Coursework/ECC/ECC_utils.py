@@ -216,7 +216,7 @@ def read_ECC_instance(filename):
 # p, a, b, P, n, Q = read_ECC_instance('task/exampleInputRho.txt')
 
 
-def write_output(p, a, b, P, Q, c, d, c_, d_, filename):
+def write_output(p, a, b, P, n, Q, c, d, c_, d_, filename):
     out_str = f"""
 # DISCLAIMER
 # Example of output for Basic Pollard Rho
@@ -242,7 +242,7 @@ d'= {d_}
     with open(filename, 'w') as f:
         f.write(out_str)
 
-def write_output_full(p, a, b, P, Q, c, d, c_, d_, l, filename):
+def write_output_full(p, a, b, P, n, Q, c, d, c_, d_, l, filename):
     out_str = f"""
 # DISCLAIMER
 # Example of output for Basic Pollard Rho
@@ -271,4 +271,4 @@ l = {l}
     with open(filename, 'w') as f:
         f.write(out_str)
 
-write_output_full(16001, 10, 1, Point(1654, 7208), Point(5000, 1283), 159, 161, 271, 349, 1024, 'test.txt')
+# write_output_full(16001, 10, 1, Point(1654, 7208), Point(5000, 1283), 159, 161, 271, 349, 1024, 'test.txt')
