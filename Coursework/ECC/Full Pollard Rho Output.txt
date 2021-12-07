@@ -1,0 +1,23 @@
+# DISCLAIMER
+# Example of output for Basic Pollard Rho
+# You needn't write the disclaimer but please write the inputs so it's easier for me to check your results
+# IMPORTANT: 
+# 1. You may not necessarily get the same collision than I did for this example. 
+# 2. A "collision" where c=c' and d=d' is not valid.
+
+Input:
+p = 20376993552394903
+a = 10
+b = 1
+P = (1983, 6761152449250519)
+n = 1852453970120513
+Q = (18432261261031243, 11140924411855488)
+
+Collision:
+c = 74344934027957
+d = 1839300198364846 
+c'= 1075993571912231
+d'= 1000971759381135   
+
+Discrete logarithm:
+l = 428971283427559

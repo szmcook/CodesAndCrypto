@@ -33,10 +33,40 @@ def EEA(a,b):
         s.append( s[i-2] - q[i] * s[i-1] )
         t.append( t[i-2] - q[i] * t[i-1] )
 
+    #      gcd      x       y
+    # s.t. ax + by = gcd
     return(r[i-1], s[i-1], t[i-1])
 
 
-        
+def inverseModp(x, p):
+    y = x % p
+    (r, s, t) = EEA(p, y)
+    return t % p
+
+
+def modular_inverse(b, m):
+    return EEA(b, m)[1] % m
+
+
+def mod_exponent_neg(b, e, m):
+    '''
+    returns b**e % m for a negative e
+    
+    according to wikipedia
+    c = b**e % m = d**(-e) % m
+    when e < 0 and b * d = 1
+
+    we know that the modular inverse of 2 % 101 is 51
+
+    '''
+    assert e < 0
+    d = modular_inverse(b, m)
+    assert b*d%m == 1
+
+    c = d**(-e) % m
+    return c
+
+    
 import random
 
 # I presume that the input is correct, i.e. ex = 1 mod phi(n)
