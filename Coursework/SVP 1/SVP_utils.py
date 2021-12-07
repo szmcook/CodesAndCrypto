@@ -90,8 +90,7 @@ def read_basis(filename):
 
 
 def write_output(B, u, norm, x, filename):
-    out_str = f"""
-# DISCLAIMER
+    out_str = f"""# DISCLAIMER
 # This is an example of short vector output
 # PLease include:
 # -- the basis B
@@ -101,16 +100,16 @@ def write_output(B, u, norm, x, filename):
 # Again, you needn't write the disclaimer
 
 B =
-{B}
+{np.array2string(B, separator=", ")}
 
 u =
-{np.atleast_2d(u).T}
+{np.array2string(np.atleast_2d(u).T, separator=", ")}
 
 norm =
 {norm}
 
 x =
-{np.atleast_2d(x).T}
+{np.array2string(np.atleast_2d(x).T, separator=", ")}
     """
     with open(filename,'w') as f:
         f.write(out_str)
