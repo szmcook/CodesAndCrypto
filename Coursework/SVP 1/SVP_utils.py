@@ -1,4 +1,4 @@
-# %%
+
 """
 # Imports and set up
 """
@@ -7,9 +7,8 @@ import numpy as np
 import random
 from copy import deepcopy
 import re
-import time
 
-# %%
+
 """
 # Gram Schmidt function for Basis Orthogonalisation
 """
@@ -36,8 +35,6 @@ def gram_schmidt(B):
     B_ = np.array(us)
     return B_.T
 
-# B = gram_schmidt(B)
-# %%
 """
 # SVPoint class
 """
@@ -45,7 +42,7 @@ def gram_schmidt(B):
 class SVPoint():
     def __init__(self, x, B):
         """
-        Create a point p on the lattice p = Bx
+        Create a vector p on the lattice p = Bx
 
         Parameters:
         x (np.array): The vector x s.t. Bx = p
@@ -73,17 +70,14 @@ class SVPoint():
 
     def find_norm(self):
         """
-        Function to find the length of a vector/point
-        
-        Parameters:
-        p (np.array): vector
+        Function to find the length of a vector
         
         Returns:
         int: length of the vector
         """
         return np.linalg.norm(self.p)
 
-# %%
+
 """
 # File input output functions
 """
@@ -94,7 +88,6 @@ def read_basis(filename):
         lines = [re.findall('[0-9]+', l) for l in f.readlines() if l[0] not in '#B\n']
     return np.array(lines, dtype=np.int64)
 
-# B = read_basis('task/latticeBasis.txt')
 
 def write_output(B, u, norm, x, filename):
     out_str = f"""
@@ -102,7 +95,7 @@ def write_output(B, u, norm, x, filename):
 # This is an example of short vector output
 # PLease include:
 # -- the basis B
-# -- the point on the lattice u
+# -- the vector on the lattice u
 # -- the norm of u
 # -- the vector x such that u = Bx
 # Again, you needn't write the disclaimer
@@ -122,95 +115,93 @@ x =
     with open(filename,'w') as f:
         f.write(out_str)
 
-# write_output(B, np.array([14,5,5,23,24,423,4,23,5,]), 100, np.array([1,3,4,56,4]), 'test.txt')
 
-# %%
 """
 # Sieving functions
 """
 
 def generate_basis_vectors(B, n):
     """
-    Function to generate points which are the basis vectors from B
+    Function to generate vectors which are the basis vectors from B
     
     Parameters:
     B (np.array): Basis for lattice
-    n (int): number of points to generate
+    n (int): number of vectors to generate
     
     Returns:
-    list: points ordered by norm
+    list: vectors ordered by norm
     """
-    points = []
+    vectors = []
 
-    while len(points) < n:
+    while len(vectors) < n:
         vs = random.randint(0, 4)
         for _ in range(vs):
             tmp = np.zeros_like(B[1])
             i = random.randint(0, 11)
             tmp[i] = random.choice([-1, 1])
             new_p = SVPoint(tmp, B)
-            if new_p.norm != 0 and new_p not in points:
-                points.append(new_p)
+            if new_p.norm != 0 and new_p not in vectors:
+                vectors.append(new_p)
 
-    points.sort(key=lambda x: x.norm)
-    return points
+    vectors.sort(key=lambda x: x.norm)
+    return vectors
 
 
-def generate_random_points(B, n, l=-2, h=3):
+def generate_random_vectors(B, n, l=-2, h=3):
     """
-    Function to generate random points from the lattice defined by B
+    Function to generate random vectors from the lattice defined by B
     
     Parameters:
     B (np.array): Basis for lattice
-    n (int): number of points to generate
+    n (int): number of vectors to generate
     l (int): low number for range of basis vector multiples
     h (int): high number for range of basis vector multiples
     
     Returns:
-    list: points ordered by norm
+    list: vectors ordered by norm
     """
-    points = []
+    vectors = []
 
-    while len(points) < n:
+    while len(vectors) < n:
         x = np.random.randint(l, h, size=(len(B[0]),))
         new_p = SVPoint(x, B)
 
-        if new_p.norm != 0 and new_p not in points:
-            points.append(new_p)
+        if new_p.norm != 0 and new_p not in vectors:
+            vectors.append(new_p)
 
-    points.sort(key=lambda x: x.norm)
-    return points
+    vectors.sort(key=lambda x: x.norm)
+    return vectors
 
 
 def find_random(p, q, B):
     """
-    Function to find a random point on the lattice
+    Function to find a random vector on the lattice
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (SVPoint): vector p
+    q (SVPoint): vector q
     B (np.array): Basis for lattice
     
     Returns:
-    SVPoint: random point on lattice defined by B
+    SVPoint: random vector on lattice defined by B
     """
-    points = []    
-    while len(points) < 1:
+    vectors = []    
+    while len(vectors) < 1:
         x = np.random.randint(-4, 4, size=(len(B[0]),))
         new_p = SVPoint(x, B)
         if new_p.norm != 0:
-            points.append(new_p)
+            vectors.append(new_p)
 
-    return points[0]
+    return vectors[0]
 
 
 def find_difference(p, q, B):
     """
-    Function to find the point which is the difference of p and another q
+    Function to find the vector which is the difference of p and another q
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (SVPoint): vector p
+    q (SVPoint): vector q
     B (np.array): Basis for lattice
     
     Returns:
@@ -222,16 +213,16 @@ def find_difference(p, q, B):
 
 def find_average(p, q, B):
     """
-    Function to find the point which is the average of p and q
+    Function to find the vector which is the average of p and q
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (SVPoint): vector p
+    q (SVPoint): vector q
     B (np.array): Basis for lattice
     
     Returns:
     SVPoint: average of p and q on B
-    None: if the average isn't a point, it returns None
+    None: if the average isn't a vector, it returns None
     """
     for i, j in zip(p.x, q.x):
         if (i - j) % 2 != 0:
@@ -242,11 +233,11 @@ def find_average(p, q, B):
 
 def find_modified_average(p, q, B):
     """
-    Function to find the point which is the average of self and another point
+    Function to find the vector which is the average of self and another vector
     
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (SVPoint): vector p
+    q (SVPoint): vector q
     B (np.array): Basis for lattice
     
     Returns:
@@ -264,15 +255,15 @@ def find_modified_average(p, q, B):
 
 def find_modified_average_random(p, q, B):
     """
-    Function to find a random point on the lattice from the modified average
+    Function to find a random vector on the lattice from the modified average
 
     Parameters:
-    p (SVPoint): Point p
-    q (SVPoint): Point q
+    p (SVPoint): vector p
+    q (SVPoint): vector q
     B (np.array): Basis for lattice
     
     Returns:
-    SVPoint: random point with x values between -3 and 3
+    SVPoint: random vector with x values between -3 and 3
     """
     tmp = deepcopy(q.x)
     for i, (ui, vi) in enumerate(zip(p.x, q.x)):    
@@ -289,39 +280,39 @@ def find_modified_average_random(p, q, B):
     return new_p
     
 
-def augment(points, B, n, p, generate_point=find_modified_average, timeout=None):
+def augment(vectors, B, n, p, generate_vector=find_modified_average, timeout=None):
     """
-    Function to find n more points
+    Function to find n more vectors
     
     Parameters:
-    points (list): Ordered list of points to consider
+    vectors (list): Ordered list of vectors to consider
     B (np.array): Basis for lattice
-    n (int): number of points to put into the list to return
-    p (float): proportion of the old points to keep for the new list
-    generate_point (function): function to combine two vectors and generate a new one
+    n (int): number of vectors to put into the list to return
+    p (float): proportion of the old vectors to keep for the new list
+    generate_vector (function): function to combine two vectors and generate a new one
     timeout (int): seconds to timeout after
 
     Returns:
-    list: more points
+    list: more vectors
     """
 
     # Generate a new set. Options: empty set, random sample from the old set, shortest from the old set
-    # new_points = set()
-    # new_points = set(random.sample(points, int(p*len(points))))
-    # new_points.add(new_SV)
+    # new_vectors = set()
+    # new_vectors = set(random.sample(vectors, int(p*len(vectors))))
+    # new_vectors.add(new_SV)
 
     # Keep the first p shortest vectors
-    new_points = points[:int(p * len(points))]
+    new_vectors = vectors[:int(p * len(vectors))]
 
     # Fill up the new set with new vectors
-    while len(new_points) < n:
-        p1 = random.choice(points[:int(p * len(points))])
-        p2 = random.choice(points[:int(p * len(points))])
+    while len(new_vectors) < n:
+        p1 = random.choice(vectors[:int(p * len(vectors))])
+        p2 = random.choice(vectors[:int(p * len(vectors))])
 
         # We require that: new_p is not the 0 vector, is not in the list, is shorter than p1 and p2
-        new_p = generate_point(p1, p2, B)
-        if generate_point==find_random:
-            new_points.append(new_p)
+        new_p = generate_vector(p1, p2, B)
+        if generate_vector==find_random:
+            new_vectors.append(new_p)
         elif (new_p.norm == 0):
             # print("0 norm")
             continue
@@ -331,11 +322,11 @@ def augment(points, B, n, p, generate_point=find_modified_average, timeout=None)
         elif (new_p.norm > p1.norm) and (new_p.norm > p2.norm): # Using or in place of and makes little difference here.
             # print('new_p longer than parents')
             continue
-        elif (new_p in new_points):
-            # print('new_p in new_points')
+        elif (new_p in new_vectors):
+            # print('new_p in new_vectors')
             continue
         else:
-            new_points.append(new_p)
+            new_vectors.append(new_p)
 
-    new_points.sort(key=lambda x: x.norm)
-    return new_points
+    new_vectors.sort(key=lambda x: x.norm)
+    return new_vectors
